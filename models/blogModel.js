@@ -27,11 +27,11 @@ var blogSchema = new mongoose.Schema({
         type: Boolean,
         default: false
     },
-    like:{
+    likes:{
         type:mongoose.Schema.Types.ObjectId,
         ref:"User"
     },
-    dislike:{
+    dislikes:{
         type:mongoose.Schema.Types.ObjectId,
         ref:"User"
     },
