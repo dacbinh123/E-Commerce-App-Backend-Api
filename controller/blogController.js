@@ -5,9 +5,6 @@ const {validateMongoDbId} = require("../utils/validateMongodbId")
 const mongoose = require('mongoose')
 
 
-
-
-
 const createBlog = asyncHandler(async (req,res)=>{
     try {
         
@@ -121,10 +118,46 @@ const likeTheBlog = asyncHandler(async (req,res) =>{
     }
 
 })
+const disLikeTheBlog = asyncHandler(async (req,res) =>{
+    console.log(req.body)
+    const {blogId} = req.body;
+    validateMongoDbId(blogId)
+    //find the blog which you want to be liked
+    const blog = await Blog.findById(blogId)
+    //find login user
+    const loginUserId = await req?.user?._id
+    //find if the user has liked the post
+    const isDisLiked = blog?.isDisLiked
+    //find if the user has disliked the blog
+    const alreadyLiked = blog?.likes?.
+    find((userId => userId?.toString()=== loginUserId?.toString()))
+
+    if(alreadyLiked){
+        const blog = await Blog.findByIdAndUpdate(blogId,{
+            $pull:{likes : loginUserId},
+            isLiked:false
+        })
+        res.json(blog)
+    }
+    if(isDisLiked){
+        const blog = await Blog.findByIdAndUpdate(blogId,{
+            $pull:{dislikes : loginUserId},
+            isDisLiked:false
+        })
+        res.json(blog)
+    }else{
+        const blog = await Blog.findByIdAndUpdate(blogId,{
+            $push:{dislikes : loginUserId},
+            isDisLiked:true
+        })
+        res.json(blog)
+    }
+
+})
 
 
 
 module.exports = {
     deleteBlog,likeTheBlog,
     createBlog,updateBlog,
-    getBlog,getAllBlog}
+    getBlog,getAllBlog,disLikeTheBlog}
