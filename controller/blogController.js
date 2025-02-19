@@ -30,10 +30,15 @@ const updateBlog = asyncHandler(async (req,res)=>{
 })
 const getBlog = asyncHandler(async (req, res) => {
     const { id } = req.params;
-    validateMongoDbId(blogId)
+    validateMongoDbId(id); 
 
     try {
-        const blog = await Blog.findById(id);
+        const blog = await Blog.findById(id).populate("likes").populate("dislikes");
+        
+        if (!blog) {
+            return res.status(404).json({ message: "Blog not found" });
+        }
+
         const updatedBlog = await Blog.findByIdAndUpdate(
             id,
             { $inc: { numViews: 1 } },
@@ -41,13 +46,14 @@ const getBlog = asyncHandler(async (req, res) => {
         );
 
         res.json({
-            blog: updatedBlog, 
+            blog: updatedBlog,
             message: "Blog retrieved and views updated successfully!"
         });
     } catch (error) {
-        throw new Error(error);
+        res.status(500).json({ message: error.message });
     }
 });
+
 const getAllBlog = asyncHandler(async (req,res)=>{
     try {
         const allblog = await Blog.find();
