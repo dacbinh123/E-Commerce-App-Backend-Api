@@ -2,6 +2,7 @@ const Product = require('../models/productModel')
 const asyncHandler = require('express-async-handler')
 const slugify = require('slugify')
 const mongoose = require('mongoose')
+const User = require('../models/userModel');
 
 const createProduct = asyncHandler(async (req, res) => {
     try {
@@ -132,6 +133,99 @@ const deleteProduct = asyncHandler( async (req,res)=>{
         throw new Error(error);
     }
 })
+
+const addToWishlist = asyncHandler(async (req, res) => {
+    const  {_id}  = req.user;
+    const { proId } = req.body;
+    console.log("-----")
+    console.log(proId,_id)
+    console.log("-----")
+
+    try {
+        const user = await User.findById(_id);
+        const alreadyadded = user.wishlist.find((id) => id.toString() === proId); 
+
+        if (alreadyadded) {
+            let user = await User.findByIdAndUpdate(
+                _id,
+                { $pull: { wishlist: proId } },
+                { new: true }
+            );
+            res.json(user);
+        } else {
+            let user = await User.findByIdAndUpdate(
+                _id,
+                { $push: { wishlist: proId } },
+                { new: true }
+            );
+            res.json(user);
+        }
+    } catch (error) {
+        throw new Error(error);
+    }
+});
+
+const rating = asyncHandler(async (req, res) => {
+    const { _id } = req.user;
+    const { star, prodId } = req.body;
+
+    try {
+        const product = await Product.findById(prodId);
+        console.log(product)
+
+        if (!product) {
+            return res.status(404).json({ message: "Product not found" });
+        }
+
+        let alreadyRated = product.ratings.find(
+            (userId) => userId.postedby.toString() === _id.toString()
+        );
+
+        if (alreadyRated) {
+            // Cập nhật đánh giá nếu đã tồn tại
+            const updatedRating = await Product.findOneAndUpdate(
+                { _id: prodId, "ratings.postedby": _id },
+                { $set: { "ratings.$.star": star } },
+                { new: true }
+            );
+        } else {
+            // Thêm đánh giá mới nếu chưa tồn tại
+            const rateProduct = await Product.findByIdAndUpdate(
+                prodId,
+                {
+                    $push: {
+                        ratings: {
+                            star: star,
+                            postedby: _id,
+                        },
+                    },
+                },
+                { new: true }
+            );
+        }
+        const getallratings = await Product.findById(prodId);
+        let totalRating = getallratings.ratings.length;
+        let ratingsum = getallratings.ratings
+            .map((item) => item.star)
+            .reduce((prev, curr) => prev + curr, 0);
+        let actualRating = Math.round(ratingsum / totalRating);
+        let finalproduct = await Product.findByIdAndUpdate(
+            prodId,
+            {
+                totalrating: actualRating,
+            },
+            { new: true }
+        );
+        res.json(finalproduct);
+        
+    } catch (error) {
+        console.error("Error updating rating:", error);
+        res.status(500).json({ message: "Internal Server Error" });
+    }
+});
+
+
+
 module.exports={createProduct,
-    getaProduct,getAllProduct,
-    updateProduct,deleteProduct}
+    getaProduct,getAllProduct,rating,
+    updateProduct,deleteProduct,addToWishlist}
