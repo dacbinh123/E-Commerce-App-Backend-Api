@@ -77,11 +77,6 @@ const getAllProduct = asyncHandler(async (req, res) => {
             }
         }
         console.log(page,limit,skip)
-
-
-
-
-
         const product = await query
         res.json(product);
     } catch (error) {
@@ -167,7 +162,7 @@ const addToWishlist = asyncHandler(async (req, res) => {
 
 const rating = asyncHandler(async (req, res) => {
     const { _id } = req.user;
-    const { star, prodId } = req.body;
+    const { star, prodId,comment } = req.body;
 
     try {
         const product = await Product.findById(prodId);
@@ -185,7 +180,7 @@ const rating = asyncHandler(async (req, res) => {
             // Cập nhật đánh giá nếu đã tồn tại
             const updatedRating = await Product.findOneAndUpdate(
                 { _id: prodId, "ratings.postedby": _id },
-                { $set: { "ratings.$.star": star } },
+                { $set: { "ratings.$.star": star,"ratings.$.comment": comment  } },
                 { new: true }
             );
         } else {
@@ -195,6 +190,7 @@ const rating = asyncHandler(async (req, res) => {
                 {
                     $push: {
                         ratings: {
+                            comment:comment,
                             star: star,
                             postedby: _id,
                         },
